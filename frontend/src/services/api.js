@@ -1,14 +1,22 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../utils/constants';
 
+// Strip any trailing '/api' from the baseURL to prevent Axios stripping behavior
+const normalizedBaseURL = API_BASE_URL.replace(/\/api\/?$/, '');
+
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: normalizedBaseURL,
   headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
   withCredentials: true,
 });
 
-// Request interceptor — attach token
+// Request interceptor — attach token and ensure /api prefix is present
 api.interceptors.request.use((config) => {
+  // Prepend /api to relative URLs if it's not already present
+  if (config.url && config.url.startsWith('/') && !config.url.startsWith('/api')) {
+    config.url = `/api${config.url}`;
+  }
+
   const token = localStorage.getItem('auth_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
