@@ -22,5 +22,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
+
+        \Illuminate\Support\Facades\Mail::extend('brevo', function (array $config) {
+            return new \App\Mail\Transports\BrevoTransport($config['key'] ?? env('BREVO_API_KEY'));
+        });
     }
 }
