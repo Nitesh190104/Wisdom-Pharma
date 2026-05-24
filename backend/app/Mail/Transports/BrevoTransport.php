@@ -3,6 +3,7 @@
 namespace App\Mail\Transports;
 
 use Symfony\Component\Mailer\Transport\AbstractTransport;
+use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mime\MessageConverter;
 use Symfony\Component\Mime\RawMessage;
 use Illuminate\Support\Facades\Http;
@@ -15,9 +16,9 @@ class BrevoTransport extends AbstractTransport
         parent::__construct();
     }
 
-    protected function doSend(RawMessage $message): void
+    protected function doSend(SentMessage $message): void
     {
-        $email = MessageConverter::toEmail($message);
+        $email = MessageConverter::toEmail($message->getOriginalMessage());
         
         $to = [];
         foreach ($email->getTo() as $address) {
