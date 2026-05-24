@@ -15,12 +15,11 @@ class AnalyticsService
     {
         $deliveredLike = ['delivered', 'return_requested'];
 
-        $totalRevenue = Order::whereIn('status', $deliveredLike)->sum('total') - Order::where('status', 'returned')->sum('total');
+        $totalRevenue = Order::whereIn('status', $deliveredLike)->sum('total');
 
         $monthlyRevenue = Order::whereIn('status', $deliveredLike)
             ->where('created_at', '>=', now()->startOfMonth())
-            ->sum('total')
-            - Order::where('status', 'returned')->where('created_at', '>=', now()->startOfMonth())->sum('total');
+            ->sum('total');
 
         $totalOrders = Order::count();
         $pendingOrders = Order::where('status', 'processing')->count();
@@ -58,11 +57,7 @@ class AnalyticsService
                 ->where('created_at', '>=', $month->startOfMonth())
                 ->where('created_at', '<=', $month->copy()->endOfMonth())
                 ->sum('total');
-            $returnedSum = Order::where('status', 'returned')
-                ->where('created_at', '>=', $month->startOfMonth())
-                ->where('created_at', '<=', $month->copy()->endOfMonth())
-                ->sum('total');
-            $revenue = $deliveredSum - $returnedSum;
+            $revenue = $deliveredSum;
             $revenueChart[] = [
                 'month' => $month->format('M Y'),
                 'revenue' => round($revenue, 2),
