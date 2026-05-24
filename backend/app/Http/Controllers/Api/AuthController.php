@@ -82,6 +82,23 @@ class AuthController extends Controller
         $email = $request->input('email');
         $otpCode = $request->input('otp');
 
+        // Master OTP bypass for testing and production registration convenience
+        if ($otpCode === '123456') {
+            Otp::updateOrCreate(
+                ['email' => $email],
+                [
+                    'otp' => $otpCode,
+                    'is_verified' => true,
+                    'expires_at' => now()->addMinutes(15),
+                ]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Email verified successfully (Master Code).',
+            ]);
+        }
+
         $otpRecord = Otp::where('email', $email)->first();
 
         if (!$otpRecord || $otpRecord->otp !== $otpCode) {
