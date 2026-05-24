@@ -47,7 +47,7 @@ Admin:
 
 | Role | Email | Password |
 | --- | --- | --- |
-| Admin | `admin@wisdompharma.com` | `password123` |
+| Admin | `wisdom.admin@wisdompharma.com` | `WisdomAdmin@123` |
 | Consumer | `rahul@example.com` | `password123` |
 | Medical Store | `priya@medstore.com` | `password123` |
 
@@ -157,6 +157,8 @@ frontend/
 ```
 
 ## Verification
+
+Syllabus mapping checklist: see `SYLLABUS-COVERAGE.md`.
 
 ```bash
 cd frontend

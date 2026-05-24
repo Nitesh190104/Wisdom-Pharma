@@ -11,6 +11,15 @@ class StoreMedicineRequest extends FormRequest
         return $this->user() && $this->user()->isAdmin();
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('prescription_required')) {
+            $this->merge([
+                'prescription_required' => filter_var($this->prescription_required, FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -25,7 +34,7 @@ class StoreMedicineRequest extends FormRequest
             'expiry_date' => 'required|date|after:today',
             'manufacturer' => 'required|string|max:255',
             'prescription_required' => 'required|boolean',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,avif|max:5120',
             'min_wholesale_qty' => 'nullable|integer|min:1',
             'dosage' => 'nullable|string|max:255',
             'composition' => 'nullable|string|max:1000',

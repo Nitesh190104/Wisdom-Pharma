@@ -24,6 +24,17 @@ class OrderResource extends JsonResource
             'shipping_address' => $this->shipping_address,
             'notes' => $this->notes,
             'prescription_id' => $this->prescription_id,
+            'delivered_at' => $this->delivered_at,
+            'cancelled_at' => $this->cancelled_at,
+            'cancellation_reason' => $this->cancellation_reason,
+
+            // Return workflow
+            'return_requested_at' => $this->return_requested_at,
+            'return_reason' => $this->return_reason,
+            'return_reviewed_at' => $this->return_reviewed_at,
+            'return_reviewed_by' => $this->return_reviewed_by,
+            'return_reject_reason' => $this->return_reject_reason,
+            'returned_at' => $this->returned_at,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

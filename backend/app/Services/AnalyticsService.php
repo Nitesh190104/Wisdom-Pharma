@@ -13,18 +13,18 @@ class AnalyticsService
      */
     public function getDashboardStats(): array
     {
-        $totalRevenue = Order::where('status', '!=', 'cancelled')
-            ->where('payment_status', 'paid')
-            ->sum('total');
+        $deliveredLike = ['delivered', 'return_requested'];
 
-        $monthlyRevenue = Order::where('status', '!=', 'cancelled')
-            ->where('payment_status', 'paid')
+        $totalRevenue = Order::whereIn('status', $deliveredLike)->sum('total') - Order::where('status', 'returned')->sum('total');
+
+        $monthlyRevenue = Order::whereIn('status', $deliveredLike)
             ->where('created_at', '>=', now()->startOfMonth())
-            ->sum('total');
+            ->sum('total')
+            - Order::where('status', 'returned')->where('created_at', '>=', now()->startOfMonth())->sum('total');
 
         $totalOrders = Order::count();
-        $pendingOrders = Order::where('status', 'pending')->count();
-        $deliveredOrders = Order::where('status', 'delivered')->count();
+        $pendingOrders = Order::where('status', 'processing')->count();
+        $deliveredOrders = Order::whereIn('status', $deliveredLike)->count();
 
         $totalUsers = User::count();
         $totalConsumers = User::where('role', 'consumer')->count();
@@ -54,11 +54,15 @@ class AnalyticsService
         $revenueChart = [];
         for ($i = 5; $i >= 0; $i--) {
             $month = now()->subMonths($i);
-            $revenue = Order::where('status', '!=', 'cancelled')
-                ->where('payment_status', 'paid')
+            $deliveredSum = Order::whereIn('status', $deliveredLike)
                 ->where('created_at', '>=', $month->startOfMonth())
                 ->where('created_at', '<=', $month->copy()->endOfMonth())
                 ->sum('total');
+            $returnedSum = Order::where('status', 'returned')
+                ->where('created_at', '>=', $month->startOfMonth())
+                ->where('created_at', '<=', $month->copy()->endOfMonth())
+                ->sum('total');
+            $revenue = $deliveredSum - $returnedSum;
             $revenueChart[] = [
                 'month' => $month->format('M Y'),
                 'revenue' => round($revenue, 2),
@@ -67,12 +71,12 @@ class AnalyticsService
 
         // Order status distribution
         $orderStats = [
-            ['name' => 'Pending', 'value' => Order::where('status', 'pending')->count()],
-            ['name' => 'Confirmed', 'value' => Order::where('status', 'confirmed')->count()],
             ['name' => 'Processing', 'value' => Order::where('status', 'processing')->count()],
+            ['name' => 'Confirmed', 'value' => Order::where('status', 'confirmed')->count()],
             ['name' => 'Shipped', 'value' => Order::where('status', 'shipped')->count()],
-            ['name' => 'Delivered', 'value' => Order::where('status', 'delivered')->count()],
+            ['name' => 'Delivered', 'value' => Order::whereIn('status', $deliveredLike)->count()],
             ['name' => 'Cancelled', 'value' => Order::where('status', 'cancelled')->count()],
+            ['name' => 'Returned', 'value' => Order::where('status', 'returned')->count()],
         ];
 
         return [
@@ -83,7 +87,8 @@ class AnalyticsService
             ],
             'orders' => [
                 'total' => $totalOrders,
-                'pending' => $pendingOrders,
+                'pending' => 0,
+                'processing' => $pendingOrders,
                 'delivered' => $deliveredOrders,
                 'stats' => $orderStats,
             ],

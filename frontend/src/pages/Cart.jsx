@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { HiOutlineTrash, HiOutlineMinus, HiOutlinePlus, HiOutlineShoppingBag } from 'react-icons/hi';
 import useCartStore from '../store/useCartStore';
+import useAuthStore from '../store/useAuthStore';
 import { formatCurrency } from '../utils/formatters';
 import { LoadingSpinner, EmptyState } from '../components/ui';
 import toast from 'react-hot-toast';
 
 export default function Cart() {
   const { cart, fetchCart, updateItem, removeItem, loading } = useCartStore();
+  const { user } = useAuthStore();
 
   useEffect(() => { fetchCart(); }, [fetchCart]);
 
@@ -16,6 +18,13 @@ export default function Cart() {
     if (newQty < 1) return;
     try { await updateItem(medicineId, newQty); } catch (err) { toast.error(err.response?.data?.message || 'Failed to update'); }
   };
+
+  const getMinQty = (item) => {
+    if (user?.role !== 'store') return 1;
+    return Math.max(1, Number(item?.min_wholesale_qty || 1));
+  };
+
+  const isStorePending = user?.role === 'store' && user?.business?.is_verified !== true;
 
   if (loading) return <div className="py-20"><LoadingSpinner size="lg" text="Loading cart..." /></div>;
 
@@ -31,6 +40,11 @@ export default function Cart() {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
+              {isStorePending && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+                  <p className="text-amber-800 font-medium">Your business account is pending verification. Checkout is disabled until admin approval.</p>
+                </div>
+              )}
               {cart.items.map((item) => (
                 <motion.div key={item.medicine_id} layout className="bg-white rounded-2xl border border-slate-200 p-5 flex gap-5">
                   <div className="w-20 h-20 bg-primary-50 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -40,12 +54,15 @@ export default function Cart() {
                     <h3 className="font-semibold text-slate-800 truncate">{item.medicine_name}</h3>
                     <p className="text-sm text-slate-500">{formatCurrency(item.unit_price)} × {item.quantity}</p>
                     <p className="text-xs text-slate-400 mt-0.5">GST: {formatCurrency(item.gst_amount)} ({item.gst_percentage}%)</p>
+                    {user?.role === 'store' && (item.min_wholesale_qty || 0) > 1 && (
+                      <p className="text-xs text-slate-400 mt-0.5">Minimum wholesale: {item.min_wholesale_qty} units</p>
+                    )}
 
                     <div className="flex items-center justify-between mt-3">
                       <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden">
-                        <button onClick={() => handleQuantityChange(item.medicine_id, item.quantity - 1)} className="p-1.5 hover:bg-slate-50"><HiOutlineMinus className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleQuantityChange(item.medicine_id, Math.max(getMinQty(item), item.quantity - 1))} className="p-1.5 hover:bg-slate-50"><HiOutlineMinus className="w-3.5 h-3.5" /></button>
                         <span className="px-3 text-sm font-medium border-x border-slate-200">{item.quantity}</span>
-                        <button onClick={() => handleQuantityChange(item.medicine_id, item.quantity + 1)} className="p-1.5 hover:bg-slate-50"><HiOutlinePlus className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleQuantityChange(item.medicine_id, Math.min(item.stock ?? Infinity, item.quantity + 1))} className="p-1.5 hover:bg-slate-50"><HiOutlinePlus className="w-3.5 h-3.5" /></button>
                       </div>
                       <div className="flex items-center gap-4">
                         <span className="font-semibold text-slate-800">{formatCurrency(item.total)}</span>
@@ -67,9 +84,15 @@ export default function Cart() {
                 <hr className="border-slate-200" />
                 <div className="flex justify-between"><span className="font-semibold text-slate-800">Total</span><span className="text-xl font-bold text-slate-800">{formatCurrency(cart.total)}</span></div>
               </div>
-              <Link to="/checkout" className="block w-full py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors text-center shadow-sm">
-                Proceed to Checkout
-              </Link>
+              {isStorePending ? (
+                <button disabled className="block w-full py-3 bg-primary-600 text-white font-semibold rounded-xl transition-colors text-center shadow-sm opacity-60 cursor-not-allowed">
+                  Awaiting Admin Approval
+                </button>
+              ) : (
+                <Link to="/checkout" className="block w-full py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors text-center shadow-sm">
+                  Proceed to Checkout
+                </Link>
+              )}
             </div>
           </div>
         )}

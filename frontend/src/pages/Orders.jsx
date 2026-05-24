@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { HiOutlineClipboardList } from 'react-icons/hi';
 import { orderService } from '../services';
 import { formatCurrency, formatDate } from '../utils/formatters';
-import { Badge, LoadingSpinner, EmptyState, Pagination } from '../components/ui';
+import { Badge, LoadingSpinner, EmptyState, Pagination, Modal } from '../components/ui';
 import toast from 'react-hot-toast';
 
 const getId = (item) => item?._id || item?.id;
@@ -13,6 +13,11 @@ export default function Orders() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
+
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
+  const [returnOrderId, setReturnOrderId] = useState(null);
+  const [returnReason, setReturnReason] = useState('');
+  const [returnSubmitting, setReturnSubmitting] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -33,14 +38,57 @@ export default function Orders() {
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to cancel'); }
   };
 
+  const openReturnModal = (id) => {
+    setReturnOrderId(id);
+    setReturnReason('');
+    setReturnModalOpen(true);
+  };
+
+  const closeReturnModal = ({ force = false } = {}) => {
+    if (returnSubmitting && !force) return;
+    setReturnModalOpen(false);
+    setReturnOrderId(null);
+    setReturnReason('');
+  };
+
+  const submitReturn = async () => {
+    const reason = returnReason.trim();
+    if (!returnOrderId) return;
+    if (!reason) {
+      toast.error('Reason is required to request a return.');
+      return;
+    }
+
+    setReturnSubmitting(true);
+    try {
+      await orderService.return(returnOrderId, reason);
+      toast.success('Order return requested');
+      setOrders(prev => prev.map(o => getId(o) === returnOrderId ? { ...o, status: 'return_requested' } : o));
+      closeReturnModal({ force: true });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to request return');
+    } finally {
+      setReturnSubmitting(false);
+    }
+  };
+
+  const canReturnOrder = (order) => {
+    if (order.status !== 'delivered') return false;
+    const deliveryDate = new Date(order.delivered_at || order.updated_at || order.created_at);
+    const diffTime = Math.abs(new Date() - deliveryDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays <= 7;
+  };
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-slate-50 min-h-screen py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-slate-800">My Orders</h1>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
           className="px-4 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20">
           <option value="">All Statuses</option>
-          {['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => (
+          {['confirmed', 'processing', 'shipped', 'delivered', 'return_requested', 'cancelled', 'returned'].map(s => (
             <option key={s} value={s} className="capitalize">{s}</option>
           ))}
         </select>
@@ -59,8 +107,11 @@ export default function Orders() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge status={order.status} />
-                  {(order.status === 'pending' || order.status === 'confirmed') && (
+                  {(order.status === 'processing' || order.status === 'confirmed') && (
                     <button onClick={() => handleCancel(getId(order))} className="text-xs text-rose-600 font-medium hover:underline">Cancel</button>
+                  )}
+                  {canReturnOrder(order) && (
+                    <button onClick={() => openReturnModal(getId(order))} className="text-xs text-amber-600 font-medium hover:underline">Return</button>
                   )}
                 </div>
               </div>
@@ -82,6 +133,52 @@ export default function Orders() {
           <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
         </div>
       )}
+
+      <Modal
+        isOpen={returnModalOpen}
+        onClose={closeReturnModal}
+        title="Return Order"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Please tell us why you want to return this order.
+          </p>
+
+          <div>
+            <label htmlFor="return-reason" className="block text-sm font-medium text-slate-700 mb-2">Reason</label>
+            <textarea
+              id="return-reason"
+              value={returnReason}
+              onChange={(e) => setReturnReason(e.target.value)}
+              placeholder="Type your reason..."
+              rows={4}
+              disabled={returnSubmitting}
+              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 transition-all resize-none disabled:opacity-60"
+            />
+            <p className="text-xs text-slate-400 mt-2">Reason is required.</p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={closeReturnModal}
+              disabled={returnSubmitting}
+              className="px-4 py-2 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={submitReturn}
+              disabled={returnSubmitting}
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {returnSubmitting ? 'Submitting...' : 'Submit Return'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+      </div>
     </div>
   );
 }

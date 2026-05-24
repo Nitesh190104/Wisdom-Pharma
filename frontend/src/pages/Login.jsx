@@ -11,38 +11,69 @@ export default function Login() {
   const { register, handleSubmit, formState: { errors } } = useForm();
 
   const onSubmit = async (data) => {
+    const doLogin = (role) => login({ ...data, role });
+
     try {
-      const res = await login(data);
+      const res = await doLogin(tab);
       toast.success(res.message || 'Login successful!');
-      if (res.data.user.role === 'admin') navigate('/admin');
-      else if (res.data.user.role === 'store') navigate('/store');
-      else navigate('/dashboard');
+      const role = res.data.user.role;
+      if (role === 'admin') navigate('/admin');
+      else navigate('/');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login failed');
+      const errData = err.response?.data;
+
+      // Role mismatch — switch tab and let user retry (don't log in)
+      if (err.response?.status === 422 && errData?.actual_role) {
+        // No separate admin tab — if backend tells us it's an admin, retry automatically.
+        if (errData.actual_role === 'admin') {
+          try {
+            const res = await doLogin('admin');
+            toast.success(res.message || 'Login successful!');
+            navigate('/admin');
+          } catch (retryErr) {
+            const retryData = retryErr.response?.data;
+            toast.error(retryData?.message || 'Login failed');
+          }
+          return;
+        }
+
+        setTab(errData.actual_role);
+        toast.error(errData.message, { duration: 4000 });
+        return;
+      }
+
+      toast.error(errData?.message || 'Login failed');
     }
   };
 
   const tabs = [
     { id: 'consumer', label: 'Consumer' },
-    { id: 'store', label: 'Medical Store' },
+    { id: 'store',    label: 'Medical Store' },
   ];
 
   return (
     <div>
       {/* Tabs */}
-      <div className="flex bg-slate-100 rounded-xl p-1 mb-6">
+      <div className="flex bg-slate-100 rounded-xl p-1 mb-6 gap-1">
         {tabs.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${tab === t.id ? 'bg-white text-primary-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+            className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              tab === t.id
+                ? 'bg-white text-primary-700 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}>
             {t.label}
           </button>
         ))}
       </div>
 
+      {/* Heading */}
       <h2 className="text-xl font-bold text-slate-800 mb-1">
         {tab === 'store' ? 'Store Login' : 'Welcome Back'}
       </h2>
-      <p className="text-sm text-slate-500 mb-6">Enter your credentials to continue</p>
+      <p className="text-sm text-slate-500 mb-6">
+        Enter your credentials to continue
+      </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
@@ -62,7 +93,7 @@ export default function Login() {
         </div>
 
         <button type="submit" disabled={loading}
-          className="w-full py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-60 shadow-sm">
+          className="w-full py-3 text-white font-semibold rounded-xl transition-colors disabled:opacity-60 shadow-sm bg-primary-600 hover:bg-primary-700">
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>

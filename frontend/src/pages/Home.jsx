@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { HiOutlineShieldCheck, HiOutlineTruck, HiOutlineCurrencyRupee, HiOutlineUserGroup, HiOutlineArrowRight } from 'react-icons/hi';
 import MedicineCard from '../components/MedicineCard';
 import { medicineService, categoryService } from '../services';
+import useAuthStore from '../store/useAuthStore';
+
 
 const features = [
   { icon: HiOutlineShieldCheck, title: 'Verified Medicines', desc: 'All medicines are 100% authentic and sourced directly from manufacturers.' },
@@ -12,10 +14,27 @@ const features = [
   { icon: HiOutlineUserGroup, title: 'B2B & B2C', desc: 'Serving both individual consumers and medical stores with tailored pricing.' },
 ];
 
+const getCategoryEmoji = (slug) => {
+  switch (slug) {
+    case 'critical-care-injections':
+      return '💉';
+    case 'specialty-oral-tablets':
+      return '💊';
+    case 'medical-surgical-supplies':
+      return '🩹';
+    case 'surgical-instruments':
+      return '🔬';
+    default:
+      return '💊';
+  }
+};
+
 export default function Home() {
+  const { user } = useAuthStore();
   const [medicines, setMedicines] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,9 +78,15 @@ export default function Home() {
                 <Link to="/medicines" className="inline-flex items-center gap-2 px-6 py-3 bg-white text-primary-700 font-semibold rounded-xl hover:bg-primary-50 transition-colors shadow-lg shadow-black/10">
                   Browse Medicines <HiOutlineArrowRight className="w-4 h-4" />
                 </Link>
-                <Link to="/register" className="inline-flex items-center gap-2 px-6 py-3 border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors">
-                  Register as Store
-                </Link>
+                {user ? (
+                  <Link to="/profile" className="inline-flex items-center gap-2 px-6 py-3 border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors">
+                    View Profile
+                  </Link>
+                ) : (
+                  <Link to="/register" className="inline-flex items-center gap-2 px-6 py-3 border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors">
+                    Register as Store
+                  </Link>
+                )}
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
@@ -123,11 +148,11 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {categories.slice(0, 8).map((cat, i) => (
-                <motion.div key={cat._id} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
-                  <Link to={`/medicines?category=${cat._id}`}
+                <motion.div key={cat._id || cat.id} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}>
+                  <Link to={`/medicines?category=${cat._id || cat.id}`}
                     className="block p-5 bg-white rounded-2xl border border-slate-200 hover:border-primary-200 hover:shadow-md transition-all text-center group">
                     <div className="w-14 h-14 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:bg-primary-100 transition-colors">
-                      <span className="text-2xl">💊</span>
+                      <span className="text-2xl">{getCategoryEmoji(cat.slug)}</span>
                     </div>
                     <h3 className="font-semibold text-slate-800 text-sm">{cat.name}</h3>
                     <p className="text-xs text-slate-400 mt-1">{cat.medicines_count || 0} products</p>
@@ -167,7 +192,7 @@ export default function Home() {
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {medicines.slice(0, 8).map((med) => (
-                <MedicineCard key={med._id} medicine={med} />
+                <MedicineCard key={med._id || med.id} medicine={med} />
               ))}
             </div>
           )}
@@ -177,11 +202,26 @@ export default function Home() {
       {/* CTA */}
       <section className="py-20 bg-gradient-to-r from-primary-600 to-primary-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
-          <p className="text-primary-100 mb-8 max-w-xl mx-auto">Join thousands of medical stores and consumers who trust Wisdom Pharma for their pharmaceutical needs.</p>
+          <h2 className="text-3xl font-bold text-white mb-4">
+            {user ? 'Need Any Assistance?' : 'Ready to Get Started?'}
+          </h2>
+          <p className="text-primary-100 mb-8 max-w-xl mx-auto">
+            {user 
+              ? 'Our support team is here to help you 24/7 with order queries, prescription uploads, or wholesale pricing.' 
+              : 'Join thousands of medical stores and consumers who trust Wisdom Pharma for their pharmaceutical needs.'}
+          </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link to="/register" className="px-8 py-3 bg-white text-primary-700 font-semibold rounded-xl hover:bg-primary-50 transition-colors shadow-lg">Create Account</Link>
-            <Link to="/contact" className="px-8 py-3 border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors">Contact Sales</Link>
+            {user ? (
+              <>
+                <Link to="/medicines" className="px-8 py-3 bg-white text-primary-700 font-semibold rounded-xl hover:bg-primary-50 transition-colors shadow-lg">Shop Now</Link>
+                <Link to="/contact" className="px-8 py-3 border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors">Contact Support</Link>
+              </>
+            ) : (
+              <>
+                <Link to="/register" className="px-8 py-3 bg-white text-primary-700 font-semibold rounded-xl hover:bg-primary-50 transition-colors shadow-lg">Create Account</Link>
+                <Link to="/contact" className="px-8 py-3 border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 transition-colors">Contact Sales</Link>
+              </>
+            )}
           </div>
         </div>
       </section>

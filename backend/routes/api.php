@@ -4,10 +4,12 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\MedicineController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PrescriptionController;
+use App\Http\Controllers\Api\SiteContentController;
 use App\Http\Middleware\EnsureBusinessApproved;
 use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +22,8 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
     Route::post('/register', [AuthController::class, 'register'])->name('auth.register');
     Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
+    Route::post('/send-otp', [AuthController::class, 'sendOtp'])->name('auth.sendOtp');
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('auth.verifyOtp');
 });
 
 // Public medicine & category routes
@@ -28,6 +32,12 @@ Route::get('/medicines/featured', [MedicineController::class, 'featured'])->name
 Route::get('/medicines/{id}', [MedicineController::class, 'show'])->name('medicines.show');
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{id}', [CategoryController::class, 'show'])->name('categories.show');
+
+// Public site content (About page, etc.)
+Route::get('/site-content/{key}', [SiteContentController::class, 'show'])->name('site-content.show');
+
+// Contact form
+Route::post('/contact', [ContactController::class, 'send'])->name('contact.send');
 
 /*
 |--------------------------------------------------------------------------
@@ -41,7 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
     // Cart
-    Route::prefix('cart')->group(function () {
+    Route::prefix('cart')->middleware(EnsureBusinessApproved::class)->group(function () {
         Route::get('/', [CartController::class, 'index'])->name('cart.index');
         Route::post('/add', [CartController::class, 'addItem'])->name('cart.add');
         Route::put('/update', [CartController::class, 'updateItem'])->name('cart.update');
@@ -53,8 +63,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->name('orders.index');
         Route::get('/{id}', [OrderController::class, 'show'])->name('orders.show');
-        Route::post('/', [OrderController::class, 'store'])->name('orders.store');
+        Route::post('/', [OrderController::class, 'store'])->middleware(EnsureBusinessApproved::class)->name('orders.store');
         Route::post('/{id}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+        Route::post('/{id}/return', [OrderController::class, 'returnOrder'])->name('orders.return');
     });
 
     // Prescriptions
@@ -81,6 +92,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Medicine management
         Route::post('/medicines', [MedicineController::class, 'store'])->name('admin.medicines.store');
         Route::put('/medicines/{id}', [MedicineController::class, 'update'])->name('admin.medicines.update');
+        Route::post('/medicines/{id}', [MedicineController::class, 'update'])->name('admin.medicines.update.post'); // for FormData uploads
         Route::delete('/medicines/{id}', [MedicineController::class, 'destroy'])->name('admin.medicines.destroy');
 
         // Category management
@@ -100,6 +112,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Order management
         Route::get('/orders', [AdminController::class, 'allOrders'])->name('admin.orders');
         Route::put('/orders/{id}/status', [AdminController::class, 'updateOrderStatus'])->name('admin.orders.status');
+        Route::post('/orders/{id}/return/approve', [AdminController::class, 'approveReturnRequest'])->name('admin.orders.return.approve');
+        Route::post('/orders/{id}/return/reject', [AdminController::class, 'rejectReturnRequest'])->name('admin.orders.return.reject');
 
         // Inventory
         Route::get('/inventory', [AdminController::class, 'inventory'])->name('admin.inventory');
@@ -108,5 +122,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Prescriptions
         Route::get('/prescriptions', [AdminController::class, 'prescriptions'])->name('admin.prescriptions');
         Route::put('/prescriptions/{id}/review', [AdminController::class, 'reviewPrescription'])->name('admin.prescriptions.review');
+
+        // Site content editing (About page, etc.)
+        Route::put('/site-content/{key}', [SiteContentController::class, 'update'])->name('admin.site-content.update');
     });
 });

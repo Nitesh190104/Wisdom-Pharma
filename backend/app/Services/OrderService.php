@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\OrderException;
 use App\Mail\OrderPlacedMail;
 use App\Models\Cart;
 use App\Models\Medicine;
@@ -19,32 +20,39 @@ class OrderService
      */
     public function createOrder(User $user, array $data): Order
     {
+        $this->assertStoreVerified($user);
+
         $cartService = new CartService();
         $cartData = $cartService->getCartWithTotals($user);
 
         if (empty($cartData['items'])) {
-            throw new \Exception('Cart is empty. Please add items before placing an order.');
+            throw new OrderException('Cart is empty. Please add items before placing an order.');
         }
 
         $type = $user->role === 'store' ? 'wholesale' : 'retail';
 
-        // Create order
+        if ($type === 'wholesale') {
+            $this->assertWholesaleMinimums($cartData['items']);
+        }
+
+        $isUpi   = ($data['payment_method'] === 'upi');
         $order = Order::create([
-            'user_id' => $user->_id,
-            'order_number' => Order::generateOrderNumber(),
-            'items' => $cartData['items'],
-            'subtotal' => $cartData['subtotal'],
-            'gst_total' => $cartData['gst_total'],
-            'discount' => 0,
-            'total' => $cartData['total'],
-            'status' => 'pending',
-            'payment_status' => $data['payment_method'] === 'cod' ? 'pending' : 'pending',
-            'payment_method' => $data['payment_method'],
-            'type' => $type,
-            'shipping_address' => $data['shipping_address'],
-            'notes' => $data['notes'] ?? null,
-            'prescription_id' => $data['prescription_id'] ?? null,
-            'estimated_delivery' => now()->addDays(5),
+            'user_id'              => $user->_id,
+            'order_number'         => Order::generateOrderNumber(),
+            'items'                => $cartData['items'],
+            'subtotal'             => $cartData['subtotal'],
+            'gst_total'            => $cartData['gst_total'],
+            'discount'             => 0,
+            'total'                => $cartData['total'],
+            'status'               => 'processing',
+            'payment_status'       => $isUpi ? 'paid' : 'pending',
+            'payment_method'       => $data['payment_method'],
+            'razorpay_payment_id'  => $data['razorpay_payment_id'] ?? null,
+            'type'                 => $type,
+            'shipping_address'     => $data['shipping_address'],
+            'notes'                => $data['notes'] ?? null,
+            'prescription_id'      => $data['prescription_id'] ?? null,
+            'estimated_delivery'   => now()->addDays(5),
         ]);
 
         // Create order items and deduct stock
@@ -102,7 +110,7 @@ class OrderService
     public function cancelOrder(Order $order, string $reason): Order
     {
         if (!$order->canBeCancelled()) {
-            throw new \Exception('This order cannot be cancelled.');
+            throw new OrderException('This order cannot be cancelled.');
         }
 
         // Restore stock
@@ -129,5 +137,32 @@ class OrderService
         ]);
 
         return $order->fresh();
+    }
+
+    private function assertStoreVerified(User $user): void
+    {
+        if ($user->role !== 'store') {
+            return;
+        }
+
+        $business = $user->business;
+        if (!$business || !$business->is_verified) {
+            throw new OrderException('Your business account is pending verification. Please wait for admin approval.');
+        }
+    }
+
+    private function assertWholesaleMinimums(array $items): void
+    {
+        foreach ($items as $item) {
+            $medicine = Medicine::find($item['medicine_id']);
+            if (!$medicine) {
+                throw new OrderException('One or more medicines in your cart are no longer available.');
+            }
+
+            $minQty = (int) ($medicine->min_wholesale_qty ?? 0);
+            if ($minQty > 0 && (int) $item['quantity'] < $minQty) {
+                throw new OrderException("Minimum wholesale quantity for {$medicine->medicine_name} is {$minQty} units.");
+            }
+        }
     }
 }

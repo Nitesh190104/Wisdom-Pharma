@@ -1,7 +1,10 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AnimatePresence } from 'framer-motion';
 import { AppProvider } from './context/AppContext';
+import useAuthStore from './store/useAuthStore';
+import ScrollToTop from './components/ScrollToTop';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
@@ -22,15 +25,11 @@ import MedicineDetail from './pages/MedicineDetail';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-// Consumer Pages
-import ConsumerDashboard from './pages/ConsumerDashboard';
-import Cart from './pages/Cart';
+// Consumer & Store Shared Pages
 import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import Prescriptions from './pages/Prescriptions';
-
-// Store Pages
-import StoreDashboard from './pages/StoreDashboard';
+import Profile from './pages/Profile';
 
 // Admin Pages
 import AdminDashboard from './pages/AdminDashboard';
@@ -41,8 +40,22 @@ import AdminInventory from './pages/AdminInventory';
 import AdminPrescriptions from './pages/AdminPrescriptions';
 
 export default function App() {
+  const { token, user, fetchProfile } = useAuthStore();
+
+  useEffect(() => {
+    if (!token) return;
+    if (!user) {
+      fetchProfile();
+      return;
+    }
+    if (user.role === 'store' && !user.business) {
+      fetchProfile();
+    }
+  }, [token, user, fetchProfile]);
+
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AppProvider>
         <Toaster
           position="top-right"
@@ -62,22 +75,11 @@ export default function App() {
             <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
           </Route>
 
-          {/* Consumer Dashboard Routes */}
-          <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-            <Route path="/dashboard" element={<RoleRoute roles={['consumer']}><ConsumerDashboard /></RoleRoute>} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/prescriptions" element={<Prescriptions />} />
-          </Route>
-
-          {/* Store Dashboard Routes */}
-          <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-            <Route path="/store" element={<RoleRoute roles={['store']}><StoreDashboard /></RoleRoute>} />
-          </Route>
-
           {/* Admin Dashboard Routes */}
           <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
             <Route path="/admin" element={<RoleRoute roles={['admin']}><AdminDashboard /></RoleRoute>} />
             <Route path="/admin/medicines" element={<RoleRoute roles={['admin']}><AdminMedicines /></RoleRoute>} />
+            <Route path="/admin/about" element={<RoleRoute roles={['admin']}><About /></RoleRoute>} />
             <Route path="/admin/users" element={<RoleRoute roles={['admin']}><AdminUsers /></RoleRoute>} />
             <Route path="/admin/orders" element={<RoleRoute roles={['admin']}><AdminOrders /></RoleRoute>} />
             <Route path="/admin/inventory" element={<RoleRoute roles={['admin']}><AdminInventory /></RoleRoute>} />
@@ -91,8 +93,10 @@ export default function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/medicines" element={<MedicinesList />} />
             <Route path="/medicines/:id" element={<MedicineDetail />} />
-            <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
-            <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+            <Route path="/checkout" element={<RoleRoute roles={['consumer', 'store']}><Checkout /></RoleRoute>} />
+            <Route path="/orders" element={<RoleRoute roles={['consumer', 'store']}><Orders /></RoleRoute>} />
+            <Route path="/prescriptions" element={<RoleRoute roles={['consumer', 'store']}><Prescriptions /></RoleRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           </Route>
 
           {/* 404 */}

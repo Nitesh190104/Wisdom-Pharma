@@ -2,15 +2,20 @@ import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { HiOutlineMail, HiOutlinePhone, HiOutlineLocationMarker } from 'react-icons/hi';
 import toast from 'react-hot-toast';
+import { contactService } from '../services';
 
 export default function Contact() {
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm();
 
-  const onSubmit = async () => {
-    // Simulate sending
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast.success('Message sent successfully! We\'ll get back to you soon.');
-    reset();
+  const onSubmit = async (data) => {
+    try {
+      await contactService.sendMessage(data);
+      toast.success('Message sent successfully! We\'ll get back to you soon.');
+      reset();
+    } catch (err) {
+      const apiMessage = err?.response?.data?.message;
+      toast.error(apiMessage || 'Failed to send message. Please try again.');
+    }
   };
 
   return (
@@ -30,9 +35,9 @@ export default function Contact() {
             {/* Contact Info */}
             <div className="space-y-6">
               {[
-                { icon: HiOutlineLocationMarker, title: 'Visit Us', lines: ['123 Pharma Street, Medical Hub', 'Mumbai, Maharashtra 400001'] },
-                { icon: HiOutlinePhone, title: 'Call Us', lines: ['+91 98765 43210', '+91 98765 43211'] },
-                { icon: HiOutlineMail, title: 'Email Us', lines: ['contact@wisdompharma.com', 'support@wisdompharma.com'] },
+                { icon: HiOutlineLocationMarker, title: 'Visit Us', lines: ['Meera Nagar, Kandawa, Kanchanpur, Chitayipur', 'Varanasi, Uttar Pradesh - 221008'] },
+                { icon: HiOutlinePhone, title: 'Call Us', lines: ['+91 76520 45125', 'Support: 24/7 Bulk Inquiries'] },
+                { icon: HiOutlineMail, title: 'Email Us', lines: ['wisdompharma866@gmail.com'] },
               ].map((item, i) => (
                 <motion.div key={i} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                   className="flex gap-4 p-5 rounded-2xl border border-slate-200 hover:border-primary-200 hover:shadow-md transition-all">

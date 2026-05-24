@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Mail\PrescriptionReviewedMail;
+use App\Mail\OrderStatusUpdatedMail;
 use App\Models\Business;
 use App\Models\Medicine;
 use App\Models\Notification;
@@ -112,15 +113,115 @@ class AdminController extends Controller
     {
         $order = Order::find($id);
         if (!$order) return response()->json(['success' => false, 'message' => 'Order not found.'], 404);
-        $validated = $request->validate(['status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled']);
+        $validated = $request->validate(['status' => 'required|in:confirmed,processing,shipped,delivered,cancelled,returned']);
         $order->update(['status' => $validated['status']]);
         if ($validated['status'] === 'delivered') $order->update(['delivered_at' => now()]);
+        if ($validated['status'] === 'returned') {
+            $order->update([
+                'returned_at' => $order->returned_at ?? now(),
+                'return_reviewed_at' => $order->return_reviewed_at ?? now(),
+                'return_reviewed_by' => $order->return_reviewed_by ?? $request->user()->_id,
+                'return_reject_reason' => null,
+            ]);
+        }
+        
         Notification::create([
             'user_id' => $order->user_id, 'title' => 'Order Status Updated',
             'message' => "Your order #{$order->order_number} status changed to {$validated['status']}.",
             'type' => 'order', 'is_read' => false, 'data' => ['order_id' => $order->_id],
         ]);
+
+        // Send premium status update email
+        $user = $order->user;
+        if ($user && $user->email) {
+            try {
+                Mail::to($user->email)->send(new OrderStatusUpdatedMail($order, $user, $validated['status']));
+            } catch (\Throwable $e) {
+                Log::warning("Order update email failed: " . $e->getMessage());
+            }
+        }
+
         return response()->json(['success' => true, 'message' => 'Order status updated.', 'data' => $order->fresh()]);
+    }
+
+    public function approveReturnRequest(Request $request, string $id): JsonResponse
+    {
+        $order = Order::with('user')->find($id);
+        if (!$order) return response()->json(['success' => false, 'message' => 'Order not found.'], 404);
+        if ($order->status !== 'return_requested') {
+            return response()->json(['success' => false, 'message' => 'Only return requested orders can be approved.'], 422);
+        }
+
+        $order->update([
+            'status' => 'returned',
+            'returned_at' => now(),
+            'return_reviewed_at' => now(),
+            'return_reviewed_by' => $request->user()->_id,
+            'return_reject_reason' => null,
+        ]);
+
+        Notification::create([
+            'user_id' => $order->user_id,
+            'title' => 'Return Approved',
+            'message' => "Your return request for order #{$order->order_number} has been approved.",
+            'type' => 'order',
+            'is_read' => false,
+            'data' => ['order_id' => $order->_id],
+        ]);
+
+        $user = $order->user;
+        if ($user && $user->email) {
+            try {
+                Mail::to($user->email)->send(new OrderStatusUpdatedMail($order, $user, 'returned'));
+            } catch (\Throwable $e) {
+                Log::warning("Order return approval email failed: " . $e->getMessage());
+            }
+        }
+
+        return response()->json(['success' => true, 'message' => 'Return approved.', 'data' => $order->fresh()]);
+    }
+
+    public function rejectReturnRequest(Request $request, string $id): JsonResponse
+    {
+        $order = Order::with('user')->find($id);
+        if (!$order) return response()->json(['success' => false, 'message' => 'Order not found.'], 404);
+        if ($order->status !== 'return_requested') {
+            return response()->json(['success' => false, 'message' => 'Only return requested orders can be rejected.'], 422);
+        }
+
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+        $reason = $validated['reason'] ?? 'Return request rejected by admin.';
+
+        $order->update([
+            // Keep order in delivered state, but store the return decision details
+            'status' => 'delivered',
+            'returned_at' => null,
+            'return_reviewed_at' => now(),
+            'return_reviewed_by' => $request->user()->_id,
+            'return_reject_reason' => $reason,
+        ]);
+
+        Notification::create([
+            'user_id' => $order->user_id,
+            'title' => 'Return Rejected',
+            'message' => "Your return request for order #{$order->order_number} was rejected. Reason: {$reason}",
+            'type' => 'order',
+            'is_read' => false,
+            'data' => ['order_id' => $order->_id],
+        ]);
+
+        $user = $order->user;
+        if ($user && $user->email) {
+            try {
+                Mail::to($user->email)->send(new OrderStatusUpdatedMail($order, $user, 'return_rejected'));
+            } catch (\Throwable $e) {
+                Log::warning("Order return rejection email failed: " . $e->getMessage());
+            }
+        }
+
+        return response()->json(['success' => true, 'message' => 'Return rejected.', 'data' => $order->fresh()]);
     }
 
     public function inventory(Request $request): JsonResponse

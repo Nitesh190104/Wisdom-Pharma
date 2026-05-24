@@ -7,12 +7,12 @@ export const ORDER_STATUSES = {
   shipped: { label: 'Shipped', color: 'bg-purple-100 text-purple-700' },
   delivered: { label: 'Delivered', color: 'bg-emerald-100 text-emerald-700' },
   cancelled: { label: 'Cancelled', color: 'bg-rose-100 text-rose-700' },
+  returned: { label: 'Returned', color: 'bg-slate-100 text-slate-700' },
 };
 
 export const PAYMENT_METHODS = [
-  { value: 'cod', label: 'Cash on Delivery' },
-  { value: 'online', label: 'Online Payment' },
-  { value: 'bank_transfer', label: 'Bank Transfer' },
+  { value: 'cod',  label: 'Cash on Delivery' },
+  { value: 'upi',  label: 'UPI / Online Payment' },
 ];
 
 export const ROLES = { CONSUMER: 'consumer', STORE: 'store', ADMIN: 'admin' };

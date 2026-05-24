@@ -21,9 +21,10 @@ class PlaceOrderRequest extends FormRequest
             'shipping_address.state' => 'required|string|max:100',
             'shipping_address.pincode' => 'required|string|max:10',
             'shipping_address.phone' => 'required|string|max:15',
-            'payment_method' => 'required|in:cod,online,bank_transfer',
-            'notes' => 'nullable|string|max:500',
-            'prescription_id' => 'nullable|string',
+            'payment_method'      => 'required|in:cod,upi',
+            'razorpay_payment_id' => 'nullable|string',
+            'notes'               => 'nullable|string|max:500',
+            'prescription_id'     => 'nullable|string',
         ];
     }
 }

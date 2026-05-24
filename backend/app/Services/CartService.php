@@ -45,6 +45,7 @@ class CartService
                 'price_type' => $type,
                 'stock' => $medicine->stock,
                 'prescription_required' => $medicine->prescription_required,
+                'min_wholesale_qty' => $medicine->min_wholesale_qty,
             ];
 
             $subtotal += $itemSubtotal;

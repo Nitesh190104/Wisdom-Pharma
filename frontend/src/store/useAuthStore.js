@@ -61,6 +61,21 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
+  updateProfile: async (userData) => {
+    set({ loading: true, error: null });
+    try {
+      const { data } = await authService.updateProfile(userData);
+      const user = data.data;
+      localStorage.setItem('auth_user', JSON.stringify(user));
+      set({ user, loading: false });
+      return data;
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Profile update failed';
+      set({ loading: false, error: msg });
+      throw err;
+    }
+  },
+
   isAuthenticated: () => !!get().token,
   isAdmin: () => get().user?.role === 'admin',
   isStore: () => get().user?.role === 'store',

@@ -43,15 +43,15 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-start gap-3 text-sm text-slate-400">
                 <HiOutlineLocationMarker className="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" />
-                123 Pharma Street, Medical Hub, Mumbai, Maharashtra 400001
+                Meera Nagar, Kandawa, Kanchanpur, Chitayipur, Varanasi, Uttar Pradesh - 221008
               </li>
               <li className="flex items-center gap-3 text-sm text-slate-400">
                 <HiOutlinePhone className="w-5 h-5 text-primary-400 flex-shrink-0" />
-                +91 98765 43210
+                +91 76520 45125
               </li>
               <li className="flex items-center gap-3 text-sm text-slate-400">
                 <HiOutlineMail className="w-5 h-5 text-primary-400 flex-shrink-0" />
-                contact@wisdompharma.com
+                wisdompharma866@gmail.com
               </li>
             </ul>
           </div>

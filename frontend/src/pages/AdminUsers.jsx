@@ -40,6 +40,19 @@ export default function AdminUsers() {
     } catch { toast.error('Failed to approve'); }
   };
 
+  const handleReject = async (businessId) => {
+    const reason = window.prompt('Reject business application. Optional reason:', 'Application rejected.');
+    if (reason === null) return;
+
+    try {
+      await adminService.rejectBusiness(businessId, reason);
+      setPendingBusinesses(prev => prev.filter(b => getId(b) !== businessId));
+      toast.success('Business rejected');
+    } catch {
+      toast.error('Failed to reject');
+    }
+  };
+
   const handleToggleActive = async (userId, isActive) => {
     try {
       await adminService.updateUser(userId, { is_active: !isActive });
@@ -66,7 +79,7 @@ export default function AdminUsers() {
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => handleApprove(getId(b))} className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700">Approve</button>
-                  <button className="px-3 py-1.5 bg-rose-600 text-white text-xs font-medium rounded-lg hover:bg-rose-700">Reject</button>
+                  <button onClick={() => handleReject(getId(b))} className="px-3 py-1.5 bg-rose-600 text-white text-xs font-medium rounded-lg hover:bg-rose-700">Reject</button>
                 </div>
               </div>
             ))}

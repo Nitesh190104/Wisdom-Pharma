@@ -95,9 +95,9 @@ export default function AdminDashboard() {
 
       {/* Quick Stats */}
       <div className="grid sm:grid-cols-4 gap-4 mb-8">
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
-          <p className="text-2xl font-bold text-amber-700">{orders.pending}</p>
-          <p className="text-sm text-amber-600">Pending Orders</p>
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-center">
+          <p className="text-2xl font-bold text-blue-700">{orders.processing !== undefined ? orders.processing : orders.pending}</p>
+          <p className="text-sm text-blue-600">Processing Orders</p>
         </div>
         <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center">
           <p className="text-2xl font-bold text-emerald-700">{orders.delivered}</p>

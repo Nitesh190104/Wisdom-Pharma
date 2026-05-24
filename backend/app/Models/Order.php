@@ -20,6 +20,7 @@ class Order extends Model
         'status', // pending, confirmed, processing, shipped, delivered, cancelled
         'payment_status', // pending, paid, refunded
         'payment_method',
+        'razorpay_payment_id',
         'type', // retail, wholesale
         'shipping_address',
         'billing_address',
@@ -29,6 +30,14 @@ class Order extends Model
         'delivered_at',
         'cancelled_at',
         'cancellation_reason',
+
+        // Return workflow
+        'return_requested_at',
+        'return_reason',
+        'return_reviewed_at',
+        'return_reviewed_by',
+        'return_reject_reason',
+        'returned_at',
     ];
 
     protected function casts(): array
@@ -44,6 +53,11 @@ class Order extends Model
             'estimated_delivery' => 'date',
             'delivered_at' => 'datetime',
             'cancelled_at' => 'datetime',
+
+            // Return workflow
+            'return_requested_at' => 'datetime',
+            'return_reviewed_at' => 'datetime',
+            'returned_at' => 'datetime',
         ];
     }
 
@@ -85,6 +99,13 @@ class Order extends Model
     }
 
     // Helpers
+    public function getStatusAttribute($value)
+    {
+        // Legacy compatibility: this status is no longer used.
+        if ($value === 'return_rejected') return 'delivered';
+        return $value;
+    }
+
     public static function generateOrderNumber(): string
     {
         return 'WP-' . strtoupper(uniqid()) . '-' . now()->format('Ymd');
@@ -107,6 +128,6 @@ class Order extends Model
 
     public function canBeCancelled(): bool
     {
-        return in_array($this->status, ['pending', 'confirmed']);
+        return in_array($this->status, ['processing', 'confirmed']);
     }
 }

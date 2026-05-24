@@ -9,8 +9,10 @@ use App\Models\Medicine;
 use App\Repositories\MedicineRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class MedicineController extends Controller
 {
@@ -74,10 +76,9 @@ class MedicineController extends Controller
 
         $data = $request->validated();
 
-        // Handle image upload
+        // Handle image upload – save to public/images/medicines & mirror to Medicines folder
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('medicines', 'public');
-            $data['image'] = '/storage/' . $path;
+            $data['image'] = $this->handleImageUpload($request->file('image'), $request->input('medicine_name'));
         }
 
         $data['is_active'] = true;
@@ -119,21 +120,27 @@ class MedicineController extends Controller
             'expiry_date' => 'sometimes|date',
             'manufacturer' => 'sometimes|string|max:255',
             'prescription_required' => 'sometimes|boolean',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp,avif|max:5120',
             'is_active' => 'sometimes|boolean',
             'dosage' => 'nullable|string|max:255',
             'composition' => 'nullable|string|max:1000',
         ]);
 
-        // Handle image upload
+        // Handle image upload – save to public/images/medicines & mirror to Medicines folder
         if ($request->hasFile('image')) {
-            // Delete old image
-            if ($medicine->image) {
-                $oldPath = str_replace('/storage/', '', $medicine->image);
-                Storage::disk('public')->delete($oldPath);
+            // Delete old file from public/images/medicines if it was stored there
+            if ($medicine->image && str_contains($medicine->image, '/images/medicines/')) {
+                $oldFilename = basename(urldecode($medicine->image));
+                $oldPath = public_path('images/medicines') . DIRECTORY_SEPARATOR . $oldFilename;
+                if (file_exists($oldPath)) @unlink($oldPath);
+                // Also remove from Medicines folder
+                $mirrorPath = base_path('../Medicines') . DIRECTORY_SEPARATOR . $oldFilename;
+                if (file_exists($mirrorPath)) @unlink($mirrorPath);
             }
-            $path = $request->file('image')->store('medicines', 'public');
-            $validated['image'] = '/storage/' . $path;
+            $validated['image'] = $this->handleImageUpload(
+                $request->file('image'),
+                $validated['medicine_name'] ?? $medicine->medicine_name
+            );
         }
 
         $medicine = $this->medicines->update($medicine, $validated);
@@ -167,6 +174,39 @@ class MedicineController extends Controller
             'success' => true,
             'message' => 'Medicine deleted successfully.',
         ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Private Helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Save an uploaded medicine image to:
+     *   1. backend/public/images/medicines/{name}.{ext}   (served as /images/medicines/...)
+     *   2. project root /Medicines/{name}.{ext}           (user's mirror folder)
+     *
+     * Returns the full local URL for the DB.
+     */
+    private function handleImageUpload(UploadedFile $file, string $medicineName): string
+    {
+        $ext      = strtolower($file->getClientOriginalExtension()) ?: $file->guessExtension();
+        $filename = $medicineName . '.' . $ext;   // e.g. "Dolo 650.avif"
+
+        $destDir  = public_path('images/medicines');
+        if (!is_dir($destDir)) mkdir($destDir, 0777, true);
+
+        // Move into public/images/medicines/
+        $file->move($destDir, $filename);
+
+        // Mirror copy to project-root Medicines/ folder
+        $medicinesDir = base_path('../Medicines');
+        if (is_dir($medicinesDir)) {
+            @copy($destDir . DIRECTORY_SEPARATOR . $filename,
+                  $medicinesDir . DIRECTORY_SEPARATOR . $filename);
+        }
+
+        $appUrl = rtrim(config('app.url'), '/');
+        return $appUrl . '/images/medicines/' . rawurlencode($filename);
     }
 
     /**

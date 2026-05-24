@@ -42,23 +42,30 @@ class CartController extends Controller
         ]);
 
         $medicine = Medicine::find($validated['medicine_id']);
-
-        if (!$medicine) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Medicine not found.',
-            ], 404);
-        }
-
-        if ($medicine->stock < $validated['quantity']) {
-            return response()->json([
-                'success' => false,
-                'message' => "Only {$medicine->stock} units available.",
-            ], 422);
-        }
-
         $user = $request->user();
         $priceType = $user->role === 'store' ? 'wholesale' : 'retail';
+
+        $error = null;
+        $statusCode = 422;
+
+        if (!$medicine) {
+            $error = 'Medicine not found.';
+            $statusCode = 404;
+        } elseif ($medicine->stock < $validated['quantity']) {
+            $error = "Only {$medicine->stock} units available.";
+        } elseif ($user->role === 'store') {
+            $minQty = (int) ($medicine->min_wholesale_qty ?? 0);
+            if ($minQty > 0 && $validated['quantity'] < $minQty) {
+                $error = "Minimum wholesale quantity for {$medicine->medicine_name} is {$minQty} units.";
+            }
+        }
+
+        if ($error) {
+            return response()->json([
+                'success' => false,
+                'message' => $error,
+            ], $statusCode);
+        }
 
         $cart = Cart::firstOrCreate(
             ['user_id' => $user->_id],
@@ -87,14 +94,24 @@ class CartController extends Controller
         ]);
 
         $medicine = Medicine::find($validated['medicine_id']);
+        $user = $request->user();
+
+        $error = null;
         if ($medicine && $medicine->stock < $validated['quantity']) {
-            return response()->json([
-                'success' => false,
-                'message' => "Only {$medicine->stock} units available.",
-            ], 422);
+            $error = "Only {$medicine->stock} units available.";
+        } elseif ($user->role === 'store' && $medicine) {
+            $minQty = (int) ($medicine->min_wholesale_qty ?? 0);
+            if ($minQty > 0 && $validated['quantity'] < $minQty) {
+                $error = "Minimum wholesale quantity for {$medicine->medicine_name} is {$minQty} units.";
+            }
         }
 
-        $user = $request->user();
+        if ($error) {
+            return response()->json([
+                'success' => false,
+                'message' => $error,
+            ], 422);
+        }
         $cart = Cart::where('user_id', $user->_id)->first();
 
         if (!$cart) {

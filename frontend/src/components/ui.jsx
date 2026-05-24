@@ -37,6 +37,8 @@ export function Badge({ status, className = '' }) {
     shipped: 'bg-purple-100 text-purple-700',
     delivered: 'bg-emerald-100 text-emerald-700',
     cancelled: 'bg-rose-100 text-rose-700',
+    return_requested: 'bg-amber-100 text-amber-700',
+    returned: 'bg-slate-100 text-slate-700',
     approved: 'bg-emerald-100 text-emerald-700',
     rejected: 'bg-rose-100 text-rose-700',
     active: 'bg-emerald-100 text-emerald-700',

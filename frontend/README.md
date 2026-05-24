@@ -1,16 +1,46 @@
-# React + Vite
+# Wisdom Pharma — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React (Vite) frontend for the Wisdom Pharma full-stack platform.
 
-Currently, two official plugins are available:
+## Requirements
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 18+ (recommended: latest LTS)
+- Backend running on `http://localhost:8000`
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+cd frontend
+npm install
+```
 
-## Expanding the ESLint configuration
+Create `frontend/.env` if you want to override the API base URL (optional):
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```env
+VITE_API_BASE_URL=http://localhost:8000/api
+```
+
+Start dev server:
+
+```bash
+npm run dev
+```
+
+Build for production:
+
+```bash
+npm run build
+```
+
+Lint:
+
+```bash
+npm run lint
+```
+
+## Notes
+
+- Login supports **Consumer**, **Medical Store**, and **Admin** (admin uses normal login with admin credentials).
+- Store ordering is blocked until `business.is_verified === true` (the backend enforces this; the UI also disables checkout and cart actions accordingly).
+
+For full project setup (backend + database + seed data), see the root `README.md`.
