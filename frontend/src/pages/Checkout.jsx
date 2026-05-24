@@ -91,7 +91,7 @@ export default function Checkout() {
       return;
     }
 
-    const amountInPaise = Math.round((cart.total || 0) * 100);
+    const amountInPaise = Math.ceil(cart.total || 0) * 100;
 
     const options = {
       key: RAZORPAY_KEY,

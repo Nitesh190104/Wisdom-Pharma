@@ -1,7 +1,8 @@
 export const formatCurrency = (amount) => {
+  const roundedAmount = Math.ceil(amount || 0);
   return new Intl.NumberFormat('en-IN', {
-    style: 'currency', currency: 'INR', minimumFractionDigits: 2,
-  }).format(amount || 0);
+    style: 'currency', currency: 'INR', minimumFractionDigits: 0, maximumFractionDigits: 0
+  }).format(roundedAmount);
 };
 
 export const formatDate = (date) => {

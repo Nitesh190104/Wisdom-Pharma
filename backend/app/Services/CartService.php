@@ -39,9 +39,9 @@ class CartService
                 'quantity' => $cartItem['quantity'],
                 'unit_price' => $unitPrice,
                 'gst_percentage' => $medicine->gst_percentage,
-                'gst_amount' => round($gstAmount, 2),
-                'subtotal' => round($itemSubtotal, 2),
-                'total' => round($itemSubtotal + $gstAmount, 2),
+                'gst_amount' => ceil($gstAmount),
+                'subtotal' => ceil($itemSubtotal),
+                'total' => ceil($itemSubtotal + $gstAmount),
                 'price_type' => $type,
                 'stock' => $medicine->stock,
                 'prescription_required' => $medicine->prescription_required,
@@ -56,9 +56,9 @@ class CartService
             'id' => $cart->_id,
             'items' => $items,
             'item_count' => count($items),
-            'subtotal' => round($subtotal, 2),
-            'gst_total' => round($gstTotal, 2),
-            'total' => round($subtotal + $gstTotal, 2),
+            'subtotal' => ceil($subtotal),
+            'gst_total' => ceil($gstTotal),
+            'total' => ceil($subtotal + $gstTotal),
         ];
     }
 }
