@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://localhost:8000/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 export const ORDER_STATUSES = {
   pending: { label: 'Pending', color: 'bg-amber-100 text-amber-700' },
