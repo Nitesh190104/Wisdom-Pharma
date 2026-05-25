@@ -15,14 +15,28 @@ export default function MedicinesList() {
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [sortBy, setSortBy] = useState('created_at');
+  const [sortBy, setSortBy] = useState('created_at_desc');
 
   const debouncedSearch = useDebounce(search, 400);
 
   const fetchMedicines = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { page, per_page: 12, sort_by: sortBy, sort_order: 'desc' };
+      let sort_by = 'created_at';
+      let sort_order = 'desc';
+
+      if (sortBy === 'retail_price_asc') {
+        sort_by = 'retail_price';
+        sort_order = 'asc';
+      } else if (sortBy === 'retail_price_desc') {
+        sort_by = 'retail_price';
+        sort_order = 'desc';
+      } else if (sortBy === 'medicine_name_asc') {
+        sort_by = 'medicine_name';
+        sort_order = 'asc';
+      }
+
+      const params = { page, per_page: 12, sort_by, sort_order };
       if (debouncedSearch) params.search = debouncedSearch;
       if (selectedCategory) params.category_id = selectedCategory;
       const { data } = await medicineService.getAll(params);
@@ -86,9 +100,10 @@ export default function MedicinesList() {
                 <label className="block text-sm font-medium text-slate-700 mb-2">Sort By</label>
                 <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400">
-                  <option value="created_at">Newest First</option>
-                  <option value="retail_price">Price: Low to High</option>
-                  <option value="medicine_name">Name: A-Z</option>
+                  <option value="created_at_desc">Newest First</option>
+                  <option value="retail_price_asc">Price: Low to High</option>
+                  <option value="retail_price_desc">Price: High to Low</option>
+                  <option value="medicine_name_asc">Name: A-Z</option>
                 </select>
               </div>
             </div>
