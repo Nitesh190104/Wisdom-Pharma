@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\AdminChatbotController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
@@ -88,6 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
     */
     Route::prefix('admin')->middleware(RoleMiddleware::class . ':admin')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+        Route::post('/chatbot/message', [AdminChatbotController::class, 'handleMessage'])->name('admin.chatbot.message');
 
         // Medicine management
         Route::post('/medicines', [MedicineController::class, 'store'])->name('admin.medicines.store');

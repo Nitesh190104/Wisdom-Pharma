@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HiOutlineMenu, HiOutlineHome, HiOutlineShoppingBag, HiOutlineClipboardList, HiOutlineUsers, HiOutlineCube, HiOutlineChartBar, HiOutlineLogout, HiOutlineDocumentText } from 'react-icons/hi';
 import useAuthStore from '../store/useAuthStore';
 import Navbar from '../components/Navbar';
+import AdminChatbot from '../components/AdminChatbot';
 
 const adminLinks = [
   { to: '/admin', icon: HiOutlineChartBar, label: 'Dashboard', end: true },
@@ -112,6 +113,7 @@ export default function DashboardLayout() {
           </main>
         </div>
       </div>
+      {user?.role === 'admin' && <AdminChatbot />}
     </div>
   );
 }

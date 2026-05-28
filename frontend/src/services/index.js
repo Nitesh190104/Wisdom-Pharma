@@ -68,6 +68,7 @@ export const adminService = {
   updateStock: (id, stock) => api.put(`/admin/inventory/${id}/stock`, { stock }),
   getPrescriptions: (params) => api.get('/admin/prescriptions', { params }),
   reviewPrescription: (id, data) => api.put(`/admin/prescriptions/${id}/review`, data),
+  chatbotSendMessage: (message) => api.post('/admin/chatbot/message', { message }),
 };
 
 export const prescriptionService = {
