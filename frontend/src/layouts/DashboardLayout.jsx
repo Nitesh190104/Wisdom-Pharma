@@ -5,6 +5,7 @@ import { HiOutlineMenu, HiOutlineHome, HiOutlineShoppingBag, HiOutlineClipboardL
 import useAuthStore from '../store/useAuthStore';
 import Navbar from '../components/Navbar';
 import AdminChatbot from '../components/AdminChatbot';
+import CustomerChatbot from '../components/CustomerChatbot';
 
 const adminLinks = [
   { to: '/admin', icon: HiOutlineChartBar, label: 'Dashboard', end: true },
@@ -113,7 +114,7 @@ export default function DashboardLayout() {
           </main>
         </div>
       </div>
-      {user?.role === 'admin' && <AdminChatbot />}
+      {user?.role === 'admin' ? <AdminChatbot /> : <CustomerChatbot />}
     </div>
   );
 }

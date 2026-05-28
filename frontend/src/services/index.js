@@ -89,5 +89,6 @@ export const siteContentService = {
 
 export const contactService = {
   sendMessage: (data) => api.post('/contact', data),
+  customerChatbotSendMessage: (message) => api.post('/chatbot/message', { message }),
 };
 

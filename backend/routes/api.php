@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AdminChatbotController;
+use App\Http\Controllers\Api\CustomerChatbotController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
@@ -50,6 +51,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/profile', [AuthController::class, 'profile'])->name('auth.profile');
     Route::put('/auth/profile', [AuthController::class, 'updateProfile'])->name('auth.profile.update');
     Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
+    Route::post('/chatbot/message', [CustomerChatbotController::class, 'handleMessage'])->name('chatbot.message');
 
     // Cart
     Route::prefix('cart')->middleware(EnsureBusinessApproved::class)->group(function () {
