@@ -169,4 +169,4 @@ cd ../backend
 php artisan test
 ```
 
-Current note: Vite may need to run outside this tool sandbox on Windows because Tailwind/Vite native process loading can be blocked by sandbox permissions.
+Current note: Vite may need to run outside this tool sandbox on Windows because Tailwind/Vite native process loading can be blocked by the sandbox permissions.
