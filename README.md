@@ -43,14 +43,6 @@ Admin:
 - Approve/reject medical store business accounts
 - Review uploaded prescriptions
 
-## Default Credentials
-
-| Role | Email | Password |
-| --- | --- | --- |
-| Admin | `wisdom.admin@wisdompharma.com` | `WisdomAdmin@123` |
-| Consumer | `rahul@example.com` | `password123` |
-| Medical Store | `priya@medstore.com` | `password123` |
-
 ## Setup
 
 ### Backend
@@ -66,14 +58,6 @@ php artisan serve
 
 Backend URL: `http://localhost:8000`
 
-Important `.env` values:
-
-```env
-DB_CONNECTION=mongodb
-DB_DSN=mongodb+srv://username:password@cluster.example.mongodb.net/
-DB_DATABASE=wisdom_pharma
-MAIL_MAILER=log
-```
 
 ### Frontend
 
@@ -156,10 +140,6 @@ frontend/
   src/utils
 ```
 
-## Verification
-
-Syllabus mapping checklist: see `SYLLABUS-COVERAGE.md`.
-
 ```bash
 cd frontend
 npm run lint
@@ -168,5 +148,3 @@ npm run build
 cd ../backend
 php artisan test
 ```
-
-Current note: Vite may need to run outside this tool sandbox on Windows because Tailwind/Vite native process loading can be blocked by the sandbox permissions.
